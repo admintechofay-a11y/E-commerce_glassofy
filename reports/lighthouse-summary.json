@@ -1,0 +1,42 @@
+[
+  {
+    "page": "Home",
+    "url": "http://localhost:3000/",
+    "performance": 54,
+    "accessibility": 93,
+    "bestPractices": 96,
+    "seo": 92
+  },
+  {
+    "page": "Product list",
+    "url": "http://localhost:3000/products",
+    "performance": 53,
+    "accessibility": 86,
+    "bestPractices": 96,
+    "seo": 92
+  },
+  {
+    "page": "Product detail",
+    "url": "http://localhost:3000/products/floorspringdoorcloser-glas-p004_02_floorspring_do",
+    "performance": 55,
+    "accessibility": 93,
+    "bestPractices": 96,
+    "seo": 91
+  },
+  {
+    "page": "Cart",
+    "url": "http://localhost:3000/cart",
+    "performance": 54,
+    "accessibility": 93,
+    "bestPractices": 96,
+    "seo": 92
+  },
+  {
+    "page": "Login",
+    "url": "http://localhost:3000/login",
+    "performance": 55,
+    "accessibility": 89,
+    "bestPractices": 96,
+    "seo": 92
+  }
+]
