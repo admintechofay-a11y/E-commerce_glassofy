@@ -5,7 +5,11 @@ const { PORT, NODE_ENV } = require('./config/env');
 const startServer = async () => {
   try {
     // 1. Connect Database
-    await connectDB();
+    try {
+      await connectDB();
+    } catch (dbErr) {
+      console.warn('[Server Warning] MongoDB not connected on boot:', dbErr.message);
+    }
 
     // 2. Start HTTP Listener
     const server = app.listen(PORT, () => {
