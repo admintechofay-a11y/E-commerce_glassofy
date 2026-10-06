@@ -1,0 +1,17 @@
+node_modules
+.DS_Store
+*.log
+.env*
+!.env.example
+dist
+build
+coverage
+catalogue_output
+test_output*
+scratch
+playwright-report/
+test-results/
+__pycache__/
+*.pyc
+.vscode/
+.idea/

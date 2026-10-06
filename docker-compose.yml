@@ -1,0 +1,82 @@
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: glassofy-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: examplepassword
+      MONGO_INITDB_DATABASE: glassofy
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - glassofy-network
+
+  mongo-express:
+    image: mongo-express:1.0.2-20
+    container_name: glassofy-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: examplepassword
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: adminpassword
+    depends_on:
+      - mongo
+    networks:
+      - glassofy-network
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: glassofy-server
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGO_URI: mongodb://root:examplepassword@mongo:27017/glassofy?authSource=admin
+      CLIENT_URL: http://localhost:3000
+      JWT_SECRET: glassofy_super_secure_jwt_secret_key_2026_change_in_prod
+      JWT_EXPIRE: 1d
+      JWT_REFRESH_SECRET: glassofy_refresh_secret_key_2026_change_in_prod
+      JWT_REFRESH_EXPIRE: 7d
+      ADMIN_NAME: "Glassofy Admin"
+      ADMIN_EMAIL: "admin@glassofy.com"
+      ADMIN_PASSWORD: "AdminSecurePassword123!"
+      ADMIN_MOBILE: "9876543210"
+    depends_on:
+      - mongo
+    networks:
+      - glassofy-network
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: glassofy-client
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      VITE_API_BASE_URL: http://localhost:5000/api
+    depends_on:
+      - server
+    networks:
+      - glassofy-network
+
+networks:
+  glassofy-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
+    driver: local

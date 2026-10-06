@@ -1,0 +1,32 @@
+{
+  "name": "glassofy-ecommerce",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Glassofy Architectural Hardware E-Commerce Platform",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "build:client": "npm run build --workspace=client",
+    "seed": "npm run seed --prefix server",
+    "test": "npm test --prefix server",
+    "test:server": "npm test --prefix server",
+    "test:qa": "playwright test tests/qa.spec.js",
+    "lint": "npm run lint --workspace=server && npm run lint --workspace=client",
+    "format": "npm run format --workspace=server && npm run format --workspace=client"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "concurrently": "^9.1.2",
+    "lighthouse": "^13.5.0",
+    "sharp": "^0.35.5"
+  },
+  "overrides": {
+    "braces": "^3.0.3",
+    "micromatch": "^4.0.8"
+  }
+}

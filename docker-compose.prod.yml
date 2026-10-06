@@ -1,0 +1,94 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: glassofy-mongo-prod
+    restart: always
+    # Security: No ports exposed to public internet in production
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-ChangeThisStrongPassword2026!}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-glassofy}
+    volumes:
+      - mongo-prod-data:/data/db
+      - ./scripts/mongo-backups:/backups
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - glassofy-prod-network
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: glassofy-server-prod
+    restart: always
+    # Security: Internal communication only through Nginx reverse proxy
+    expose:
+      - "5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGO_URI: mongodb://${MONGO_ROOT_USER:-admin}:${MONGO_ROOT_PASSWORD:-ChangeThisStrongPassword2026!}@mongo:27017/${MONGO_DB:-glassofy}?authSource=admin
+      CLIENT_URL: ${CLIENT_URL:-https://glassofy.com}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRE: 1d
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_REFRESH_EXPIRE: 7d
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
+      WHATSAPP_APP_SECRET: ${WHATSAPP_APP_SECRET:-}
+      WHATSAPP_MOCK: ${WHATSAPP_MOCK:-false}
+      ADMIN_NAME: ${ADMIN_NAME:-Glassofy Admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@glassofy.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      ADMIN_MOBILE: ${ADMIN_MOBILE:-9876543210}
+    volumes:
+      - server-prod-uploads:/app/public/images/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - glassofy-prod-network
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: glassofy-client-prod
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      server:
+        condition: service_healthy
+    networks:
+      - glassofy-prod-network
+
+networks:
+  glassofy-prod-network:
+    driver: bridge
+
+volumes:
+  mongo-prod-data:
+    driver: local
+  server-prod-uploads:
+    driver: local
