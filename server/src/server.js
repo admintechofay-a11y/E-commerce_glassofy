@@ -2,6 +2,8 @@ const app = require('./app');
 const connectDB = require('./config/db');
 const { PORT, NODE_ENV } = require('./config/env');
 
+let serverInstance = null;
+
 const startServer = async () => {
   try {
     // 1. Connect Database
@@ -12,7 +14,7 @@ const startServer = async () => {
     }
 
     // 2. Start HTTP Listener
-    const server = app.listen(PORT, () => {
+    serverInstance = app.listen(PORT, () => {
       console.log('====================================================');
       console.log(`  GLASSOFY BACKEND SERVER RUNNING`);
       console.log(`  Environment : ${NODE_ENV}`);
@@ -25,10 +27,12 @@ const startServer = async () => {
     // 3. Graceful Shutdown Handlers
     const handleShutdown = (signal) => {
       console.log(`[Server] ${signal} signal received. Closing HTTP server gracefully...`);
-      server.close(() => {
-        console.log('[Server] HTTP server closed.');
-        process.exit(0);
-      });
+      if (serverInstance) {
+        serverInstance.close(() => {
+          console.log('[Server] HTTP server closed.');
+          process.exit(0);
+        });
+      }
     };
 
     process.on('SIGTERM', () => handleShutdown('SIGTERM'));
@@ -37,7 +41,9 @@ const startServer = async () => {
     // Handle Unhandled Promise Rejections
     process.on('unhandledRejection', (err) => {
       console.error('[Fatal Error] Unhandled Promise Rejection:', err.message);
-      server.close(() => process.exit(1));
+      if (serverInstance) {
+        serverInstance.close(() => process.exit(1));
+      }
     });
   } catch (error) {
     console.error(`[Fatal Error] Could not start server: ${error.message}`);
@@ -45,4 +51,11 @@ const startServer = async () => {
   }
 };
 
-startServer();
+// Start standalone HTTP listener only when run directly (node src/server.js)
+if (!process.env.VERCEL && require.main === module) {
+  startServer();
+}
+
+// Export the Express app for Vercel and serverless environments
+module.exports = app;
+

@@ -115,6 +115,20 @@ if (NODE_ENV !== 'test') {
   app.use('/api', apiLimiter);
 }
 
+// 6.1 Database auto-connection for serverless runtimes (e.g. Vercel)
+const mongoose = require('mongoose');
+const connectDB = require('./config/db');
+app.use(async (req, res, next) => {
+  if (mongoose.connection.readyState === 0 && NODE_ENV !== 'test') {
+    try {
+      await connectDB();
+    } catch (err) {
+      console.warn('[Serverless DB] Auto-connect error:', err.message);
+    }
+  }
+  next();
+});
+
 // 7. Comprehensive Health Check Endpoint
 app.get('/api/health', (req, res) => {
   const mongoose = require('mongoose');
