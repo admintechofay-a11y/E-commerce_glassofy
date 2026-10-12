@@ -33,6 +33,7 @@ const spaFallbackPlugin = () => ({
           fs.mkdirSync(routeDir, { recursive: true });
         }
         fs.copyFileSync(indexHtml, path.resolve(routeDir, 'index.html'));
+        fs.copyFileSync(indexHtml, path.resolve(distDir, `${route}.html`));
       });
     }
   },
