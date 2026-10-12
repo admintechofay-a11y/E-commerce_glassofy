@@ -2,9 +2,9 @@
   "name": "glassofy-server",
   "version": "1.0.0",
   "description": "Express Backend API for Glassofy E-Commerce",
-  "main": "src/server.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node src/server.js",
+    "start": "node index.js",
     "dev": "nodemon src/server.js",
     "seed": "node src/scripts/seed.js",
     "seed:admin": "node src/scripts/seedAdmin.js",
