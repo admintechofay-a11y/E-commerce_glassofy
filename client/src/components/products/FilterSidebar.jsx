@@ -58,7 +58,7 @@ export const FilterSidebar = ({
             {currentCategory === 'all' && <Check className="w-3.5 h-3.5 text-[#2E2622]" />}
           </button>
 
-          {categories.map((cat) => {
+          {(Array.isArray(categories) ? categories.filter((c) => c && typeof c === 'object' && typeof c.name === 'string') : []).map((cat) => {
             const isSelected = currentCategory === cat.slug || currentCategory === cat._id;
             return (
               <button
@@ -70,9 +70,9 @@ export const FilterSidebar = ({
                     : 'text-[#7A726A] hover:text-[#2E2622] hover:bg-[#F0EDE8]/50'
                 }`}
               >
-                <span className="truncate pr-2">{cat.name}</span>
+                <span className="truncate pr-2">{cat.name || 'Category'}</span>
                 {cat.productCount !== undefined && (
-                  <span className="text-[10px] text-[#7A726A]">({cat.productCount})</span>
+                  <span className="text-[10px] text-[#7A726A]">({Number(cat.productCount) || 0})</span>
                 )}
               </button>
             );

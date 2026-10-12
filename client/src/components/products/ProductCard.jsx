@@ -91,7 +91,7 @@ export const ProductCard = ({ product }) => {
           )}
         </div>
 
-        {product.code && (
+        {(typeof product.code === 'string' || typeof product.code === 'number') && (
           <span className="absolute top-2.5 right-2.5 text-[9px] font-mono uppercase text-[#7A726A] bg-[#FAF8F4]/80 px-1 py-0.5 rounded-[2px] pointer-events-none">
             {product.code}
           </span>

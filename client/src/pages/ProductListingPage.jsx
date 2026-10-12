@@ -46,9 +46,12 @@ export const ProductListingPage = () => {
   const loadCategories = useCallback(async () => {
     try {
       const data = await fetchCategories();
-      setCategories(data || []);
+      const safeData = Array.isArray(data)
+        ? data.filter((c) => c && typeof c === 'object' && typeof c.name === 'string')
+        : [];
+      setCategories(safeData);
     } catch (_err) {
-      // ignore
+      setCategories([]);
     }
   }, []);
 
@@ -80,14 +83,18 @@ export const ProductListingPage = () => {
         limit: 12,
       });
 
-      setProducts(data.products || []);
-      setTotal(data.total || 0);
-      setTotalPages(data.totalPages || 1);
-      if (data.availableFilters) {
+      setProducts(Array.isArray(data?.products) ? data.products : []);
+      setTotal(Number(data?.total) || 0);
+      setTotalPages(Number(data?.totalPages) || 1);
+      if (data?.availableFilters && typeof data.availableFilters === 'object') {
         setAvailableFilters(data.availableFilters);
       }
     } catch (err) {
-      setError(err.message || 'Failed to load products. Please check connection and try again.');
+      setError(
+        typeof err?.message === 'string'
+          ? err.message
+          : 'Failed to load products. Please check connection and try again.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -244,7 +251,13 @@ export const ProductListingPage = () => {
             <div className="p-8 bg-[#F9ECEB] border border-[#A4493D]/30 rounded-[2px] text-center space-y-3">
               <AlertCircle className="w-6 h-6 text-[#A4493D] mx-auto" />
               <h4 className="text-sm font-semibold uppercase tracking-[0.08em] text-[#2E2622]">Error Loading Catalogue</h4>
-              <p className="text-xs text-[#7A726A] max-w-md mx-auto">{error}</p>
+              <p className="text-xs text-[#7A726A] max-w-md mx-auto">
+                {typeof error === 'string'
+                  ? error
+                  : typeof error?.message === 'string'
+                    ? error.message
+                    : 'Failed to load products. Please check connection and try again.'}
+              </p>
               <Button variant="secondary" size="sm" onClick={handleRetry}>
                 Try Again
               </Button>
