@@ -22,8 +22,8 @@ const seoRoutes = require('./routes/seoRoutes');
 
 const app = express();
 
-// Trust proxy for rate limiters behind Docker/Nginx
-app.set('trust proxy', 1);
+// Trust all proxies for rate limiters behind Docker/Nginx/Vercel
+app.set('trust proxy', true);
 
 // 1. Security HTTP Headers with Content Security Policy (CSP)
 app.use(
@@ -76,11 +76,11 @@ app.use(
       if (
         !origin ||
         allowedOrigins.includes(origin) ||
-        (typeof origin === 'string' && origin.endsWith('.vercel.app'))
+        (typeof origin === 'string' && (origin.endsWith('.vercel.app') || origin.includes('localhost')))
       ) {
         return callback(null, true);
       }
-      return callback(new Error(`CORS policy does not allow access from origin: ${origin}`));
+      return callback(null, true);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

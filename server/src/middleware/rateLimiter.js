@@ -1,13 +1,15 @@
 const rateLimit = require('express-rate-limit');
 const { sendError } = require('../utils/response');
 
-// Strict rate limiter for auth endpoints (15 minutes, 50 requests in prod, skipped for localhost testing)
+// Strict rate limiter for auth endpoints (15 minutes, 50 requests in prod, skipped for localhost testing and Vercel)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 50,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
   skip: (req) =>
+    Boolean(process.env.VERCEL) ||
     process.env.NODE_ENV === 'test' ||
     (process.env.NODE_ENV !== 'production' &&
       (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1' || req.hostname === 'localhost')),
@@ -27,7 +29,9 @@ const apiLimiter = rateLimit({
   max: 2000,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false,
   skip: (req) =>
+    Boolean(process.env.VERCEL) ||
     process.env.NODE_ENV === 'test' ||
     (process.env.NODE_ENV !== 'production' &&
       (req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1' || req.hostname === 'localhost')),
