@@ -51,8 +51,8 @@ const startServer = async () => {
   }
 };
 
-// Start standalone HTTP listener only when run directly (node src/server.js)
-if (!process.env.VERCEL && require.main === module) {
+// Start HTTP listener when run directly (node src/server.js or Vercel service)
+if (require.main === module) {
   startServer();
 }
 
