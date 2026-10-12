@@ -117,11 +117,17 @@ export const Header = () => {
     }
   };
 
-  const handleSelectSuggestion = (slug) => {
+  const handleSelectSuggestion = (itemOrSlug) => {
     setSearchOpen(false);
     setMenuOpen(false);
     setSearchTerm('');
-    navigate(`/products/${slug}`);
+    const target =
+      typeof itemOrSlug === 'object'
+        ? itemOrSlug?.slug || itemOrSlug?._id
+        : itemOrSlug;
+    if (target) {
+      navigate(`/products/${target}`);
+    }
   };
 
   const handleLogout = async () => {
@@ -322,7 +328,7 @@ export const Header = () => {
                   {safeSuggestions.slice(0, 5).map((item) => (
                     <button
                       key={item?._id || item?.slug || item?.name}
-                      onClick={() => handleSelectSuggestion(item?.slug)}
+                      onClick={() => handleSelectSuggestion(item)}
                       className="w-full p-2.5 flex items-center gap-3 text-left hover:bg-[#F0EDE8] transition-colors"
                     >
                       <div className="w-9 h-9 rounded-[2px] bg-[#F0EDE8] border border-[#DDD8CF] p-1 shrink-0 flex items-center justify-center">
@@ -591,7 +597,7 @@ export const Header = () => {
                 {safeSuggestions.map((item) => (
                   <button
                     key={item?._id || item?.slug || item?.name}
-                    onClick={() => handleSelectSuggestion(item?.slug)}
+                    onClick={() => handleSelectSuggestion(item)}
                     className="w-full p-3 flex items-center gap-3 text-left hover:bg-[#F0EDE8] transition-colors"
                   >
                     <div className="w-10 h-10 rounded-[2px] bg-[#F0EDE8] border border-[#DDD8CF] p-1 shrink-0 flex items-center justify-center">

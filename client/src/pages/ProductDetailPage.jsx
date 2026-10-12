@@ -43,15 +43,32 @@ export const ProductDetailPage = () => {
     fetchProductBySlug(slug)
       .then((data) => {
         if (!isMounted) return;
-        const prod = data.product;
-        setProduct(prod);
-        setRelatedProducts(data.relatedProducts || []);
 
-        // Default selected variant
-        if (prod.variants && prod.variants.length > 0) {
-          setSelectedVariant(prod.variants[0]);
+        // Support both { product: prod, relatedProducts } and direct prod object
+        const prod = data?.product || (data && (data._id || data.slug || data.name) ? data : null);
+
+        if (!prod || typeof prod !== 'object') {
+          setError('Product not found or is currently unavailable.');
+          setProduct(null);
+          setIsLoading(false);
+          return;
+        }
+
+        setProduct(prod);
+        setRelatedProducts(Array.isArray(data?.relatedProducts) ? data.relatedProducts : []);
+
+        // Safe variant initialization
+        const variantsList = Array.isArray(prod?.variants) ? prod.variants : [];
+        if (variantsList.length > 0) {
+          setSelectedVariant(variantsList[0]);
         } else {
-          setSelectedVariant(null);
+          setSelectedVariant({
+            size: 'Standard',
+            sku: prod.code || 'GLASSOFY',
+            price: prod.basePrice || 0,
+            mrp: prod.baseMrp || prod.basePrice || 0,
+            stock: prod.stock ?? 100,
+          });
         }
 
         setActiveImageIndex(0);
@@ -60,7 +77,8 @@ export const ProductDetailPage = () => {
       })
       .catch((err) => {
         if (!isMounted) return;
-        setError(err.message || 'Product not found or unavailable.');
+        console.error('[ProductDetailPage load error]', err);
+        setError(err?.message || 'Product not found or unavailable.');
         setIsLoading(false);
       });
 
@@ -129,37 +147,37 @@ export const ProductDetailPage = () => {
     );
   }
 
-  const currentPrice = selectedVariant?.price || product.basePrice;
-  const currentMrp = selectedVariant?.mrp || product.baseMrp;
+  const currentPrice = selectedVariant?.price ?? product?.basePrice ?? 0;
+  const currentMrp = selectedVariant?.mrp ?? product?.baseMrp ?? currentPrice;
   const hasDiscount = currentMrp && currentMrp > currentPrice;
   const discountPercent = hasDiscount
     ? Math.round(((currentMrp - currentPrice) / currentMrp) * 100)
     : 0;
 
-  const currentSku = selectedVariant?.sku || product.code;
-  const images = product.images && product.images.length > 0 ? product.images : [];
+  const currentSku = selectedVariant?.sku || product?.code || 'GLASSOFY';
+  const images = Array.isArray(product?.images) && product.images.length > 0 ? product.images : [];
   const currentImage = images[activeImageIndex] || null;
 
   const productSchema = {
     '@context': 'https://schema.org/',
     '@type': 'Product',
-    name: product.name,
-    image: images.map((img) => img.url),
-    description: product.description || `${product.name} (${product.code}) architectural glass fitting.`,
+    name: product?.name || product?.title || 'Glass Hardware',
+    image: images.map((img) => (typeof img === 'string' ? img : img?.url || '')),
+    description: product?.description || `${product?.name || 'Hardware'} (${product?.code || ''}) architectural glass fitting.`,
     sku: currentSku,
-    mpn: product.code,
+    mpn: product?.code || 'GLASSOFY',
     brand: {
       '@type': 'Brand',
       name: 'Glassofy',
     },
     offers: {
       '@type': 'Offer',
-      url: window.location.href,
+      url: typeof window !== 'undefined' ? window.location.href : '',
       priceCurrency: 'INR',
       price: currentPrice,
       priceValidUntil: '2027-12-31',
       itemCondition: 'https://schema.org/NewCondition',
-      availability: (selectedVariant?.stock ?? product.stock) > 0
+      availability: (selectedVariant?.stock ?? product?.stock ?? 10) > 0
         ? 'https://schema.org/InStock'
         : 'https://schema.org/OutOfStock',
       seller: {
@@ -170,7 +188,7 @@ export const ProductDetailPage = () => {
   };
 
   // Bulk Discount Tiers breakdown
-  const bulkTiers = product.bulkPricing && product.bulkPricing.length > 0
+  const bulkTiers = product?.bulkPricing && product.bulkPricing.length > 0
     ? product.bulkPricing
     : [
         { minQty: 10, discountPercent: 5 },
@@ -178,12 +196,21 @@ export const ProductDetailPage = () => {
         { minQty: 50, discountPercent: 15 },
       ];
 
+  const categorySlug =
+    typeof product?.category === 'object' && product?.category?.slug
+      ? product.category.slug
+      : null;
+  const categoryName =
+    typeof product?.category === 'object' && product?.category?.name
+      ? product.category.name
+      : null;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-16">
       <SEO
-        title={`${product.name} (${product.code}) - ${product.finish || 'Architectural Fitting'}`}
-        description={product.description || `Buy ${product.name} (${product.code}) by Glassofy. Architectural grade hardware in ${product.finish || 'CP / SS / PVD Gold'}. Fast pan-India shipping.`}
-        image={images[0]?.url || '/images/og-preview.png'}
+        title={`${product?.name || 'Hardware'} (${product?.code || 'GLASSOFY'}) - ${product?.finish || 'Architectural Fitting'}`}
+        description={product?.description || `Buy ${product?.name || 'Hardware'} (${product?.code || ''}) by Glassofy. Architectural grade hardware in ${product?.finish || 'CP / SS / PVD Gold'}. Fast pan-India shipping.`}
+        image={(images[0] && (typeof images[0] === 'string' ? images[0] : images[0]?.url)) || '/images/og-preview.png'}
         type="product"
         schema={productSchema}
       />
@@ -197,20 +224,20 @@ export const ProductDetailPage = () => {
         <Link to="/products" className="hover:text-[#2E2622] transition-colors">
           Catalogue
         </Link>
-        {product.category && (
+        {categoryName && (
           <>
             <ChevronRight className="w-3 h-3 text-[#DDD8CF]" />
             <Link
-              to={`/products?category=${product.category.slug}`}
+              to={categorySlug ? `/products?category=${categorySlug}` : `/products`}
               className="hover:text-[#2E2622] transition-colors"
             >
-              {product.category.name}
+              {categoryName}
             </Link>
           </>
         )}
         <ChevronRight className="w-3 h-3 text-[#DDD8CF]" />
         <span className="text-[#2E2622] font-medium truncate max-w-[200px]">
-          {product.name || product.title}
+          {product?.name || product?.title || 'Product'}
         </span>
       </nav>
 
@@ -348,7 +375,7 @@ export const ProductDetailPage = () => {
           </p>
 
           {/* Variant Selector (Sizes) */}
-          {product.variants && product.variants.length > 0 && (
+          {Array.isArray(product?.variants) && product.variants.length > 0 && (
             <div className="space-y-2 pt-2">
               <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.08em]">
                 <span className="text-[#7A726A]">Dimension / Specification:</span>
@@ -498,7 +525,7 @@ export const ProductDetailPage = () => {
               </h2>
             </div>
             <Link
-              to={`/products?category=${product.category?.slug}`}
+              to={categorySlug ? `/products?category=${categorySlug}` : `/products`}
               className="text-xs uppercase tracking-[0.08em] font-medium text-[#2E2622] underline underline-offset-4 hover:text-[#7A726A]"
             >
               View More &rarr;

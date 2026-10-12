@@ -19,12 +19,14 @@ export const ProductCard = ({ product }) => {
   };
 
   const hasDiscount = product.baseMrp && product.baseMrp > product.basePrice;
-  const variantCount = product.variants ? product.variants.length : 0;
-  const inStock = product.stock !== undefined ? product.stock > 0 : true;
+  const variantCount = Array.isArray(product?.variants) ? product.variants.length : 0;
+  const inStock = product?.stock !== undefined ? product.stock > 0 : true;
+
+  const productTargetSlug = product?.slug || product?._id || '';
 
   return (
     <Link
-      to={`/products/${product.slug}`}
+      to={`/products/${productTargetSlug}`}
       className="group flex flex-col justify-between transition-colors duration-200 select-none"
     >
       {/* Square Taupe Tile */}

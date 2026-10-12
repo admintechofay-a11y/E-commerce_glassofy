@@ -140,31 +140,104 @@ export const fetchFeaturedProducts = async (limit = 8) => {
 };
 
 export const fetchProductBySlug = async (slug) => {
+  if (!slug) return { product: null, relatedProducts: [] };
+  const rawSlug = String(slug).trim();
+  const decodedSlug = decodeURIComponent(rawSlug).toLowerCase();
+
   try {
-    const res = await api.get(`/products/${slug}`);
-    if (res.data) return res.data;
+    const res = await api.get(`/products/${encodeURIComponent(rawSlug)}`);
+    const payload = res?.data || res;
+    if (payload?.product) {
+      return {
+        product: payload.product,
+        relatedProducts: Array.isArray(payload.relatedProducts) ? payload.relatedProducts : [],
+      };
+    } else if (payload && (payload._id || payload.slug || payload.name)) {
+      return {
+        product: payload,
+        relatedProducts: Array.isArray(payload.relatedProducts) ? payload.relatedProducts : [],
+      };
+    }
   } catch (_err) {
-    console.warn(`[API /products/${slug} offline, using fallback]`);
+    console.warn(`[API /products/${rawSlug} offline, using fallback dataset]`);
   }
 
   const all = await getStaticProducts();
-  return all.find((p) => p.slug === slug || p._id === slug) || null;
+  const allCategories = await getStaticCategories();
+  const categoryMap = new Map(allCategories.map((c) => [c._id, c]));
+
+  let found = all.find(
+    (p) =>
+      (p.slug && p.slug.toLowerCase() === decodedSlug) ||
+      (p._id && String(p._id) === rawSlug) ||
+      (p.code && p.code.toLowerCase() === decodedSlug)
+  );
+
+  // If still not found, try relaxed slug matching
+  if (!found) {
+    found = all.find((p) => {
+      const pSlug = (p.slug || '').toLowerCase();
+      return pSlug.includes(decodedSlug) || decodedSlug.includes(pSlug);
+    });
+  }
+
+  if (!found) {
+    return { product: null, relatedProducts: [] };
+  }
+
+  let populatedProduct = { ...found };
+  if (typeof populatedProduct.category === 'string' && categoryMap.has(populatedProduct.category)) {
+    populatedProduct.category = categoryMap.get(populatedProduct.category);
+  }
+
+  const catId =
+    typeof populatedProduct.category === 'object'
+      ? populatedProduct.category?._id
+      : populatedProduct.category;
+
+  const related = all
+    .filter(
+      (p) =>
+        (p.category === catId || p.category?._id === catId) &&
+        p._id !== populatedProduct._id
+    )
+    .slice(0, 4)
+    .map((p) => {
+      if (typeof p.category === 'string' && categoryMap.has(p.category)) {
+        return { ...p, category: categoryMap.get(p.category) };
+      }
+      return p;
+    });
+
+  return {
+    product: populatedProduct,
+    relatedProducts: related,
+  };
 };
 
 export const fetchSearchSuggestions = async (searchTerm) => {
   if (!searchTerm || searchTerm.trim().length < 2) return [];
+  const q = searchTerm.toLowerCase().trim();
   try {
     const res = await api.get('/products', {
-      params: { search: searchTerm.trim(), limit: 5 },
+      params: { search: q, limit: 5 },
     });
-    if (res.data?.products) return res.data.products;
+    if (res.data?.products && Array.isArray(res.data.products) && res.data.products.length > 0) {
+      return res.data.products;
+    }
   } catch (_e) {
     // fallback
   }
 
   const all = await getStaticProducts();
-  const q = searchTerm.toLowerCase().trim();
   return all
-    .filter((p) => p.name && p.name.toLowerCase().includes(q))
+    .filter(
+      (p) =>
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.title && p.title.toLowerCase().includes(q)) ||
+        (p.code && p.code.toLowerCase().includes(q)) ||
+        (p.finish && p.finish.toLowerCase().includes(q))
+    )
     .slice(0, 5);
 };
+
