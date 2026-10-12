@@ -3,6 +3,9 @@ const { MONGO_URI } = require('./env');
 
 let cachedConnection = null;
 
+// Prevent infinite buffering in serverless runtimes
+mongoose.set('bufferCommands', false);
+
 const connectDB = async () => {
   if (cachedConnection && mongoose.connection.readyState >= 1) {
     return cachedConnection;
@@ -13,8 +16,8 @@ const connectDB = async () => {
   }
   try {
     const conn = await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 8000,
-      connectTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 5000,
     });
     console.log(`[Database] MongoDB Connected: ${conn.connection.host}/${conn.connection.name}`);
     cachedConnection = conn;
