@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { fetchProducts, fetchCategories } from '../api/catalogApi';
+import { fetchProducts, fetchCategories, CATEGORY_ALIASES } from '../api/catalogApi';
 import ProductCard from '../components/products/ProductCard';
 import FilterSidebar from '../components/products/FilterSidebar';
 import MobileFilterDrawer from '../components/products/MobileFilterDrawer';
@@ -10,6 +10,17 @@ import SEO from '../components/common/SEO';
 
 export const ProductListingPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Canonical category redirection for backward compatibility (e.g., ?category=hinges -> ?category=shower-hinges)
+  useEffect(() => {
+    const rawCategory = searchParams.get('category');
+    if (rawCategory && CATEGORY_ALIASES[rawCategory.toLowerCase().trim()]) {
+      const canonical = CATEGORY_ALIASES[rawCategory.toLowerCase().trim()];
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('category', canonical);
+      setSearchParams(nextParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // State
   const [products, setProducts] = useState([]);
@@ -149,7 +160,8 @@ export const ProductListingPage = () => {
     { value: 'name_asc', label: 'Alphabetical: A-Z' },
   ];
 
-  const categoryObj = categories.find((c) => c.slug === currentCategory);
+  const resolvedCategorySlug = CATEGORY_ALIASES[currentCategory.toLowerCase().trim()] || currentCategory;
+  const categoryObj = categories.find((c) => c.slug === currentCategory || c.slug === resolvedCategorySlug || c._id === currentCategory);
   const pageTitle = currentCategory !== 'all'
     ? `${categoryObj?.name || 'Category'} Hardware`
     : currentSearch
@@ -181,7 +193,7 @@ export const ProductListingPage = () => {
           </span>
           <h1 className="font-serif text-3xl sm:text-4xl font-normal text-[#2E2622] mt-1">
             {currentCategory !== 'all'
-              ? categories.find((c) => c.slug === currentCategory)?.name || 'Category Products'
+              ? categoryObj?.name || 'Category Products'
               : currentSearch
                 ? `Results for "${currentSearch}"`
                 : 'All Hardware Fittings'}

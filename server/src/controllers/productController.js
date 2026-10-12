@@ -41,12 +41,25 @@ const getProducts = asyncWrapper(async (req, res) => {
     ];
   }
 
-  // 2. Category Filter (by slug or ObjectId)
+  // 2. Category Filter (by slug or ObjectId, with backward-compatible legacy aliases)
   if (category && category !== 'all') {
-    if (mongoose.Types.ObjectId.isValid(category)) {
-      query.category = category;
+    const CATEGORY_ALIASES = {
+      hinges: 'shower-hinges',
+      'f-brackets-clamps': 'brackets-and-clamps',
+      'd-brackets': 'brackets-and-clamps',
+      brackets: 'brackets-and-clamps',
+      'bullet-studs-floor-pivots': 'bullet-studs-and-pivots',
+      'spider-fittings-canopy': 'spider-fittings',
+    };
+    const resolvedCategory =
+      typeof category === 'string'
+        ? CATEGORY_ALIASES[category.toLowerCase().trim()] || category.trim()
+        : category;
+
+    if (mongoose.Types.ObjectId.isValid(resolvedCategory)) {
+      query.category = resolvedCategory;
     } else {
-      const foundCategory = await Category.findOne({ slug: category });
+      const foundCategory = await Category.findOne({ slug: resolvedCategory });
       if (foundCategory) {
         query.category = foundCategory._id;
       } else {

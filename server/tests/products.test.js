@@ -139,8 +139,16 @@ describe('Product and Catalogue API Integration Tests', () => {
       expect(returnedCodes).not.toContain('PROTO-LOCK-99');
     });
 
-    it('should filter products by category slug', async () => {
+    it('should filter products by canonical category slug', async () => {
       const res = await request(app).get('/api/products?category=shower-hinges');
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.total).toBe(1);
+      expect(res.body.data.products[0].code).toBe('SH-90-BR');
+    });
+
+    it('should resolve legacy hinges alias to shower-hinges category', async () => {
+      const res = await request(app).get('/api/products?category=hinges');
 
       expect(res.status).toBe(200);
       expect(res.body.data.total).toBe(1);

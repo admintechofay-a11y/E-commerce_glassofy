@@ -145,10 +145,10 @@ export const Header = () => {
     : [];
 
   const displayCategories = safeCategories.length > 0 ? safeCategories : [
-    { name: 'Brass Hinges & Pivots', slug: 'hinges', productCount: 18 },
-    { name: 'Spider Glass Fittings', slug: 'spider-fittings', productCount: 12 },
-    { name: 'Floor Springs & Closers', slug: 'floor-springs', productCount: 8 },
-    { name: 'Glass Patch & Brackets', slug: 'brackets', productCount: 24 },
+    { name: 'Shower Hinges & Enclosures', slug: 'shower-hinges', productCount: 84 },
+    { name: 'Spider Fittings & Canopies', slug: 'spider-fittings', productCount: 42 },
+    { name: 'Bullet Studs & Floor Pivots', slug: 'bullet-studs-and-pivots', productCount: 36 },
+    { name: 'Brackets & Clamps', slug: 'brackets-and-clamps', productCount: 68 },
   ];
 
   return (

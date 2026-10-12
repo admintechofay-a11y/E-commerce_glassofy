@@ -31,11 +31,27 @@ const getStaticProducts = async () => {
   return [];
 };
 
+export const CATEGORY_ALIASES = {
+  hinges: 'shower-hinges',
+  'f-brackets-clamps': 'brackets-and-clamps',
+  'd-brackets': 'brackets-and-clamps',
+  brackets: 'brackets-and-clamps',
+  'bullet-studs-floor-pivots': 'bullet-studs-and-pivots',
+  'spider-fittings-canopy': 'spider-fittings',
+};
+
+export const resolveCategorySlug = (slug) => {
+  if (!slug || typeof slug !== 'string') return slug;
+  const normalized = slug.toLowerCase().trim();
+  return CATEGORY_ALIASES[normalized] || normalized;
+};
+
 export const fetchCategories = async () => {
   try {
-    const res = await api.get('/categories');
-    if (Array.isArray(res.data) && res.data.length > 0) {
-      return res.data;
+    const res = await api.get('/categories', { timeout: 3500 });
+    const payload = res?.data !== undefined ? res.data : res;
+    if (Array.isArray(payload) && payload.length > 0) {
+      return payload;
     }
   } catch (_err) {
     console.warn('[API /categories offline, using fallback dataset]');
@@ -51,78 +67,136 @@ export const fetchProducts = async (params = {}) => {
     }
   });
 
+  if (cleanParams.category && cleanParams.category !== 'all') {
+    cleanParams.category = resolveCategorySlug(cleanParams.category);
+  }
+
+  let apiFailed = false;
   try {
-    const res = await api.get('/products', { params: cleanParams });
-    if (res.data && Array.isArray(res.data.products) && res.data.products.length > 0) {
-      return res.data;
+    const res = await api.get('/products', { params: cleanParams, timeout: 3500 });
+    const payload =
+      res?.data?.products !== undefined
+        ? res.data
+        : res?.products !== undefined
+          ? res
+          : null;
+    if (payload && Array.isArray(payload.products)) {
+      return payload;
     }
   } catch (_err) {
-    console.warn('[API /products offline, loading catalogue from static CDN]');
+    apiFailed = true;
+    console.warn('[API /products offline or timed out, loading catalogue from static CDN]');
   }
 
   // Graceful Fallback: Filter & paginate from local dataset
-  const allProducts = await getStaticProducts();
-  const allCategories = await getStaticCategories();
+  try {
+    const [allProducts, allCategories] = await Promise.all([
+      getStaticProducts(),
+      getStaticCategories(),
+    ]);
 
-  let filtered = [...allProducts];
+    let filtered = Array.isArray(allProducts) ? [...allProducts] : [];
+    const safeCategories = Array.isArray(allCategories) ? allCategories : [];
 
-  // 1. Search Filter
-  if (cleanParams.search) {
-    const q = cleanParams.search.toLowerCase().trim();
-    filtered = filtered.filter(
-      (p) =>
-        (p.name && p.name.toLowerCase().includes(q)) ||
-        (p.title && p.title.toLowerCase().includes(q)) ||
-        (p.code && p.code.toLowerCase().includes(q)) ||
-        (p.description && p.description.toLowerCase().includes(q))
-    );
+    // 1. Search Filter
+    if (cleanParams.search) {
+      const q = cleanParams.search.toLowerCase().trim();
+      filtered = filtered.filter(
+        (p) =>
+          (p.name && p.name.toLowerCase().includes(q)) ||
+          (p.title && p.title.toLowerCase().includes(q)) ||
+          (p.code && p.code.toLowerCase().includes(q)) ||
+          (p.description && p.description.toLowerCase().includes(q))
+      );
+    }
+
+    // 2. Category Filter (with alias resolution)
+    if (cleanParams.category && cleanParams.category !== 'all') {
+      const resolvedCat = resolveCategorySlug(cleanParams.category);
+      const targetCat = safeCategories.find(
+        (c) => c._id === resolvedCat || c.slug === resolvedCat
+      );
+      const catId = targetCat ? targetCat._id : resolvedCat;
+      filtered = filtered.filter((p) => p.category === catId || p.category?._id === catId);
+    }
+
+    // 3. Finish Filter
+    if (cleanParams.finish && cleanParams.finish !== 'all') {
+      const f = cleanParams.finish.toUpperCase();
+      filtered = filtered.filter((p) => p.finish && p.finish.toUpperCase() === f);
+    }
+
+    // 4. Variant Size Filter
+    if (cleanParams.size && cleanParams.size !== 'all') {
+      const s = cleanParams.size.toLowerCase();
+      filtered = filtered.filter((p) =>
+        Array.isArray(p.variants) &&
+        p.variants.some((v) => v.size && v.size.toLowerCase().includes(s))
+      );
+    }
+
+    // 5. Price Filter
+    if (cleanParams.minPrice) {
+      filtered = filtered.filter((p) => (p.basePrice || 0) >= Number(cleanParams.minPrice));
+    }
+    if (cleanParams.maxPrice) {
+      filtered = filtered.filter((p) => (p.basePrice || 0) <= Number(cleanParams.maxPrice));
+    }
+
+    // 6. Sorting
+    if (cleanParams.sort === 'price-low' || cleanParams.sort === 'price_asc') {
+      filtered.sort((a, b) => (a.basePrice || 0) - (b.basePrice || 0));
+    } else if (cleanParams.sort === 'price-high' || cleanParams.sort === 'price_desc') {
+      filtered.sort((a, b) => (b.basePrice || 0) - (a.basePrice || 0));
+    } else if (cleanParams.sort === 'name' || cleanParams.sort === 'name_asc') {
+      filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    } else if (cleanParams.sort === 'name_desc') {
+      filtered.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+    }
+
+    const page = Number(cleanParams.page) || 1;
+    const limit = Number(cleanParams.limit) || 12;
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const startIndex = (page - 1) * limit;
+    const products = filtered.slice(startIndex, startIndex + limit);
+
+    // Compute distinct finishes and sizes for availableFilters
+    const distinctFinishes = Array.from(
+      new Set(
+        allProducts
+          .map((p) => p.finish)
+          .filter((f) => f && typeof f === 'string' && !/^\d/.test(f.trim()))
+          .map((f) => f.trim().toUpperCase())
+      )
+    ).sort();
+
+    return {
+      products,
+      total,
+      totalPages,
+      currentPage: page,
+      availableFilters: {
+        finishes: distinctFinishes.length > 0 ? distinctFinishes : ['BRASS', 'CP', 'SS', 'MATT BLACK'],
+        sizes: ['Standard', '10mm', '12mm', '19mm', '25mm', '32mm'],
+      },
+    };
+  } catch (fallbackErr) {
+    console.error('[Catalog Fallback Error]:', fallbackErr);
+    if (apiFailed) {
+      throw new Error('Failed to load products. Please check connection and try again.');
+    }
+    return {
+      products: [],
+      total: 0,
+      totalPages: 1,
+      currentPage: 1,
+      availableFilters: {
+        finishes: ['BRASS', 'CP', 'SS', 'MATT BLACK'],
+        sizes: ['Standard', '10mm', '12mm', '19mm', '25mm', '32mm'],
+      },
+    };
   }
-
-  // 2. Category Filter
-  if (cleanParams.category && cleanParams.category !== 'all') {
-    const targetCat = allCategories.find(
-      (c) => c._id === cleanParams.category || c.slug === cleanParams.category
-    );
-    const catId = targetCat ? targetCat._id : cleanParams.category;
-    filtered = filtered.filter((p) => p.category === catId || p.category?._id === catId);
-  }
-
-  // 3. Finish Filter
-  if (cleanParams.finish && cleanParams.finish !== 'all') {
-    const f = cleanParams.finish.toUpperCase();
-    filtered = filtered.filter((p) => p.finish && p.finish.toUpperCase() === f);
-  }
-
-  // 4. Price Filter
-  if (cleanParams.minPrice) {
-    filtered = filtered.filter((p) => (p.basePrice || 0) >= Number(cleanParams.minPrice));
-  }
-  if (cleanParams.maxPrice) {
-    filtered = filtered.filter((p) => (p.basePrice || 0) <= Number(cleanParams.maxPrice));
-  }
-
-  // 5. Sorting
-  if (cleanParams.sort === 'price-low') {
-    filtered.sort((a, b) => (a.basePrice || 0) - (b.basePrice || 0));
-  } else if (cleanParams.sort === 'price-high') {
-    filtered.sort((a, b) => (b.basePrice || 0) - (a.basePrice || 0));
-  } else if (cleanParams.sort === 'name') {
-    filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  }
-
-  const page = Number(cleanParams.page) || 1;
-  const limit = Number(cleanParams.limit) || 12;
-  const total = filtered.length;
-  const totalPages = Math.ceil(total / limit) || 1;
-  const startIndex = (page - 1) * limit;
-  const products = filtered.slice(startIndex, startIndex + limit);
-
-  return {
-    products,
-    total,
-    totalPages,
-    currentPage: page,
-  };
 };
 
 export const fetchFeaturedProducts = async (limit = 8) => {

@@ -48,28 +48,28 @@ export const Footer = () => {
           </h4>
           <ul className="space-y-2.5 text-xs uppercase tracking-[0.08em] text-[#C4BCB3]">
             <li>
-              <Link to="/products?category=f-brackets-clamps" className="hover:text-white transition-colors">
-                F-Brackets & Clamps
+              <Link to="/products?category=brackets-and-clamps" className="hover:text-white transition-colors">
+                Brackets & Clamps
               </Link>
             </li>
             <li>
               <Link to="/products?category=shower-hinges" className="hover:text-white transition-colors">
-                Shower Hinges
+                Shower Hinges & Enclosures
               </Link>
             </li>
             <li>
-              <Link to="/products?category=bullet-studs-floor-pivots" className="hover:text-white transition-colors">
+              <Link to="/products?category=bullet-studs-and-pivots" className="hover:text-white transition-colors">
                 Bullet Studs & Pivots
               </Link>
             </li>
             <li>
-              <Link to="/products?category=d-brackets" className="hover:text-white transition-colors">
-                D-Brackets
+              <Link to="/products?category=sliding-systems" className="hover:text-white transition-colors">
+                Sliding & Folding Systems
               </Link>
             </li>
             <li>
-              <Link to="/products?category=spider-fittings-canopy" className="hover:text-white transition-colors">
-                Spider Fittings
+              <Link to="/products?category=spider-fittings" className="hover:text-white transition-colors">
+                Spider Fittings & Canopies
               </Link>
             </li>
             <li>
