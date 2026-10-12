@@ -24,7 +24,7 @@
       }
     },
     {
-      "source": "/images/(.*)",
+      "source": "/assets/(.*)",
       "destination": {
         "service": "client"
       }
@@ -36,9 +36,16 @@
       }
     },
     {
-      "source": "/(.*)",
+      "source": "/images/(.*)",
       "destination": {
         "service": "client"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "client",
+        "path": "/index.html"
       }
     }
   ]
