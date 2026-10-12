@@ -119,7 +119,7 @@ if (NODE_ENV !== 'test') {
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 app.use(async (req, res, next) => {
-  if (mongoose.connection.readyState === 0 && NODE_ENV !== 'test') {
+  if (mongoose.connection.readyState !== 1 && NODE_ENV !== 'test') {
     try {
       await connectDB();
     } catch (err) {
@@ -130,7 +130,7 @@ app.use(async (req, res, next) => {
 });
 
 // 7. Comprehensive Health Check Endpoint
-app.get('/api/health', (req, res) => {
+app.get(['/api/health', '/health'], (req, res) => {
   const mongoose = require('mongoose');
   const dbState = mongoose.connection.readyState;
   const dbStatusMap = {
@@ -216,18 +216,24 @@ const webpNegotiationMiddleware = (req, res, next) => {
 app.use('/images', webpNegotiationMiddleware, express.static(imagesDir, staticImageOptions));
 app.use('/api/images', webpNegotiationMiddleware, express.static(imagesDir, staticImageOptions));
 
-// 8. API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/categories', categoryRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/cart', cartRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/whatsapp', whatsappRoutes);
+// 8. API Routes - Mounted on both /api/* and root for universal serverless compatibility
+const apiRoutesList = [
+  ['/auth', authRoutes],
+  ['/categories', categoryRoutes],
+  ['/products', productRoutes],
+  ['/cart', cartRoutes],
+  ['/orders', orderRoutes],
+  ['/admin', adminRoutes],
+  ['/whatsapp', whatsappRoutes],
+];
+
+apiRoutesList.forEach(([routePath, router]) => {
+  app.use(`/api${routePath}`, router);
+  app.use(routePath, router);
+});
 
 // SEO Routes (sitemap.xml and robots.txt)
-app.use('/', seoRoutes);
-app.use('/api', seoRoutes);
+app.use(['/', '/api'], seoRoutes);
 
 // 9. 404 Handler
 app.use('*', (req, res) => {

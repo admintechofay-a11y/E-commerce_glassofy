@@ -1,13 +1,23 @@
 const mongoose = require('mongoose');
 const { MONGO_URI } = require('./env');
 
+let cachedConnection = null;
+
 const connectDB = async () => {
+  if (cachedConnection && mongoose.connection.readyState >= 1) {
+    return cachedConnection;
+  }
   if (mongoose.connection.readyState >= 1) {
-    return mongoose.connection;
+    cachedConnection = mongoose.connection;
+    return cachedConnection;
   }
   try {
-    const conn = await mongoose.connect(MONGO_URI);
+    const conn = await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 8000,
+      connectTimeoutMS: 10000,
+    });
     console.log(`[Database] MongoDB Connected: ${conn.connection.host}/${conn.connection.name}`);
+    cachedConnection = conn;
     return conn;
   } catch (error) {
     console.error(`[Database Error] Connection failed: ${error.message}`);

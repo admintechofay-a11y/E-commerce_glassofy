@@ -67,10 +67,18 @@ export const Header = () => {
   const loadHeaderCategories = useCallback(() => {
     fetchCategories()
       .then((data) => {
-        if (data && Array.isArray(data)) setCategories(data);
+        if (Array.isArray(data)) {
+          setCategories(data);
+        } else if (Array.isArray(data?.data)) {
+          setCategories(data.data);
+        } else if (Array.isArray(data?.categories)) {
+          setCategories(data.categories);
+        } else {
+          setCategories([]);
+        }
       })
       .catch((_err) => {
-        // Fallback gracefully
+        setCategories([]);
       });
   }, []);
 
@@ -121,6 +129,17 @@ export const Header = () => {
     addToast('You have been logged out securely.', 'info');
     navigate('/login');
   };
+
+  const safeCategories = Array.isArray(categories) ? categories.filter((c) => c && typeof c === 'object') : [];
+  const totalCategoryCount = safeCategories.reduce((acc, c) => acc + (Number(c?.productCount) || 0), 0);
+  const safeSuggestions = Array.isArray(suggestions) ? suggestions.filter((s) => s && typeof s === 'object') : [];
+
+  const displayCategories = safeCategories.length > 0 ? safeCategories : [
+    { name: 'Brass Hinges & Pivots', slug: 'hinges', productCount: 18 },
+    { name: 'Spider Glass Fittings', slug: 'spider-fittings', productCount: 12 },
+    { name: 'Floor Springs & Closers', slug: 'floor-springs', productCount: 8 },
+    { name: 'Glass Patch & Brackets', slug: 'brackets', productCount: 24 },
+  ];
 
   return (
     <>
@@ -294,19 +313,19 @@ export const Header = () => {
               </form>
 
               {/* In-drawer Search Suggestions */}
-              {suggestions.length > 0 && (
+              {safeSuggestions.length > 0 && (
                 <div className="mt-3 bg-[#FAF8F4] border border-[#DDD8CF] rounded-[2px] overflow-hidden divide-y divide-[#DDD8CF]">
-                  {suggestions.slice(0, 5).map((item) => (
+                  {safeSuggestions.slice(0, 5).map((item) => (
                     <button
-                      key={item._id || item.slug}
-                      onClick={() => handleSelectSuggestion(item.slug)}
+                      key={item?._id || item?.slug || item?.name}
+                      onClick={() => handleSelectSuggestion(item?.slug)}
                       className="w-full p-2.5 flex items-center gap-3 text-left hover:bg-[#F0EDE8] transition-colors"
                     >
                       <div className="w-9 h-9 rounded-[2px] bg-[#F0EDE8] border border-[#DDD8CF] p-1 shrink-0 flex items-center justify-center">
-                        {item.images?.[0] ? (
+                        {item?.images?.[0] ? (
                           <img
                             src={item.images[0]}
-                            alt={item.name}
+                            alt={item?.name || 'Hardware'}
                             className="w-full h-full object-contain mix-blend-multiply"
                           />
                         ) : (
@@ -314,9 +333,9 @@ export const Header = () => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-[#2E2622] truncate">{item.name}</p>
+                        <p className="text-xs font-medium text-[#2E2622] truncate">{item?.name}</p>
                         <p className="text-[10px] text-[#7A6B5D] font-mono">
-                          {item.code ? `${item.code} • ` : ''}₹{item.basePrice}
+                          {item?.code ? `${item.code} • ` : ''}₹{item?.basePrice || 0}
                         </p>
                       </div>
                       <ChevronRight className="w-3.5 h-3.5 text-[#7A726A]" />
@@ -345,23 +364,23 @@ export const Header = () => {
                     onClick={() => setMenuOpen(false)}
                     className="text-[11px] uppercase tracking-[0.08em] font-medium text-[#2E2622] underline underline-offset-4 hover:text-[#5A4333]"
                   >
-                    All Products ({categories.reduce((acc, c) => acc + (c.productCount || 0), 0) || 'Catalogue'}) &rarr;
+                    All Products ({totalCategoryCount > 0 ? totalCategoryCount : 'Catalogue'}) &rarr;
                   </Link>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {categories.map((cat) => (
+                  {displayCategories.map((cat, idx) => (
                     <Link
-                      key={cat._id || cat.slug}
-                      to={`/products?category=${cat.slug}`}
+                      key={cat?._id || cat?.slug || `cat-${idx}`}
+                      to={`/products?category=${cat?.slug || ''}`}
                       onClick={() => setMenuOpen(false)}
                       className="group p-3 rounded-[2px] bg-[#F0EDE8]/70 hover:bg-[#ECE6DE] border border-[#DDD8CF] transition-all flex items-center justify-between text-xs text-[#2E2622]"
                     >
                       <div className="min-w-0 pr-2">
                         <span className="font-serif text-sm font-normal text-[#2E2622] group-hover:text-[#5A4333] transition-colors block truncate">
-                          {cat.name}
+                          {cat?.name || 'Collection'}
                         </span>
                         <span className="text-[10px] text-[#7A6B5D] uppercase tracking-wider block mt-0.5">
-                          {cat.productCount !== undefined ? `${cat.productCount} Models` : 'Fittings'}
+                          {cat?.productCount !== undefined ? `${cat.productCount} Models` : 'Fittings'}
                         </span>
                       </div>
                       <ChevronRight className="w-4 h-4 text-[#DDD8CF] group-hover:text-[#2E2622] group-hover:translate-x-0.5 transition-all shrink-0" />
@@ -555,19 +574,19 @@ export const Header = () => {
               )}
             </form>
 
-            {suggestions.length > 0 && (
+            {safeSuggestions.length > 0 && (
               <div className="mt-4 border border-[#DDD8CF] rounded-[2px] divide-y divide-[#DDD8CF] max-h-80 overflow-y-auto">
-                {suggestions.map((item) => (
+                {safeSuggestions.map((item) => (
                   <button
-                    key={item._id || item.slug}
-                    onClick={() => handleSelectSuggestion(item.slug)}
+                    key={item?._id || item?.slug || item?.name}
+                    onClick={() => handleSelectSuggestion(item?.slug)}
                     className="w-full p-3 flex items-center gap-3 text-left hover:bg-[#F0EDE8] transition-colors"
                   >
                     <div className="w-10 h-10 rounded-[2px] bg-[#F0EDE8] border border-[#DDD8CF] p-1 shrink-0 flex items-center justify-center">
-                      {item.images?.[0] ? (
+                      {item?.images?.[0] ? (
                         <img
                           src={item.images[0]}
-                          alt={item.name}
+                          alt={item?.name || 'Hardware'}
                           className="w-full h-full object-contain mix-blend-multiply"
                         />
                       ) : (
@@ -575,10 +594,10 @@ export const Header = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-[#2E2622] truncate">{item.name}</p>
-                      <p className="text-[11px] text-[#7A726A]">
-                        {item.code ? `${item.code} • ` : ''}
-                        {item.finish ? `${item.finish} • ` : ''}₹{item.basePrice}
+                      <p className="text-xs font-medium text-[#2E2622] truncate">{item?.name}</p>
+                      <p className="text-[11px] text-[#7A6B5D]">
+                        {item?.code ? `${item.code} • ` : ''}
+                        {item?.finish ? `${item.finish} • ` : ''}₹{item?.basePrice || 0}
                       </p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-[#7A726A]" />
