@@ -43,10 +43,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": {
-        "service": "client",
-        "path": "/index.html"
-      }
+      "destination": "/index.html"
     }
   ]
 }
