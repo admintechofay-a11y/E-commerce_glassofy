@@ -24,6 +24,18 @@
       }
     },
     {
+      "source": "/assets/(.*)",
+      "destination": {
+        "service": "client"
+      }
+    },
+    {
+      "source": "/data/(.*)",
+      "destination": {
+        "service": "client"
+      }
+    },
+    {
       "source": "/images/(.*)",
       "destination": {
         "service": "client"
@@ -32,7 +44,8 @@
     {
       "source": "/(.*)",
       "destination": {
-        "service": "client"
+        "service": "client",
+        "path": "/index.html"
       }
     }
   ]
