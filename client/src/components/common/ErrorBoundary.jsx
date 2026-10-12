@@ -48,10 +48,18 @@ export class ErrorBoundary extends Component {
               </p>
             </div>
 
-            {process.env.NODE_ENV !== 'production' && this.state.error && (
-              <div className="text-left bg-[#F0EDE8] border border-[#DDD8CF] rounded-[2px] p-3 text-xs text-[#A4493D] font-mono overflow-x-auto max-h-32">
-                {this.state.error.message || String(this.state.error)}
-              </div>
+            {this.state.error && (
+              <details className="text-left bg-[#F0EDE8] border border-[#DDD8CF] rounded-[2px] p-3 text-xs text-[#A4493D] font-mono overflow-x-auto max-h-48 group">
+                <summary className="cursor-pointer font-sans text-[11px] font-medium text-[#7A726A] uppercase tracking-wider select-none hover:text-[#2E2622]">
+                  Technical Diagnostics &bull; {this.state.error.message ? this.state.error.message.slice(0, 60) : 'View details'}
+                </summary>
+                <div className="mt-2 pt-2 border-t border-[#DDD8CF] space-y-1">
+                  <p className="font-semibold text-xs text-[#A4493D]">{this.state.error.message || String(this.state.error)}</p>
+                  {this.state.error.stack && (
+                    <pre className="text-[10px] text-[#7A726A] whitespace-pre-wrap">{this.state.error.stack}</pre>
+                  )}
+                </div>
+              </details>
             )}
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -63,11 +71,17 @@ export class ErrorBoundary extends Component {
                 <span>Reload Page</span>
               </button>
               <button
-                onClick={this.handleGoHome}
+                onClick={() => {
+                  try {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                  } catch (_e) {}
+                  window.location.href = '/';
+                }}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-[2px] bg-[#F0EDE8] border border-[#DDD8CF] text-[#2E2622] font-medium text-xs uppercase tracking-[0.08em] hover:bg-[#E7E2DA] transition-colors cursor-pointer"
               >
                 <Home className="w-3.5 h-3.5" />
-                <span>Return to Store</span>
+                <span>Clear Cache & Return to Store</span>
               </button>
             </div>
           </div>

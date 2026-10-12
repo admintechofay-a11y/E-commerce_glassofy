@@ -6,8 +6,10 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 module.exports = {
   PORT: process.env.PORT || 5000,
   NODE_ENV: process.env.NODE_ENV || 'development',
-  CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:3000',
-  MONGO_URI: process.env.MONGO_URI || 'mongodb://localhost:27017/glassofy',
+  CLIENT_URL: process.env.CLIENT_URL || 'https://e-commerceglassofy.vercel.app',
+  MONGO_URI:
+    process.env.MONGO_URI ||
+    'mongodb+srv://admintechofay_db_user:ADmin2026tech@cluster0.7dvyd9j.mongodb.net/glassofy?retryWrites=true&w=majority&appName=Cluster0',
   JWT_SECRET:
     process.env.JWT_SECRET || 'glassofy_dev_jwt_secret_key_minimum_32_characters_long_2026',
   JWT_EXPIRE: process.env.JWT_EXPIRE || '1d',

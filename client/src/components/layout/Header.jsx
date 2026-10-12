@@ -130,9 +130,13 @@ export const Header = () => {
     navigate('/login');
   };
 
-  const safeCategories = Array.isArray(categories) ? categories.filter((c) => c && typeof c === 'object') : [];
+  const safeCategories = Array.isArray(categories)
+    ? categories.filter((c) => c && typeof c === 'object' && typeof c.name === 'string')
+    : [];
   const totalCategoryCount = safeCategories.reduce((acc, c) => acc + (Number(c?.productCount) || 0), 0);
-  const safeSuggestions = Array.isArray(suggestions) ? suggestions.filter((s) => s && typeof s === 'object') : [];
+  const safeSuggestions = Array.isArray(suggestions)
+    ? suggestions.filter((s) => s && typeof s === 'object' && typeof s.name === 'string')
+    : [];
 
   const displayCategories = safeCategories.length > 0 ? safeCategories : [
     { name: 'Brass Hinges & Pivots', slug: 'hinges', productCount: 18 },
@@ -333,9 +337,11 @@ export const Header = () => {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-[#2E2622] truncate">{item?.name}</p>
+                        <p className="text-xs font-medium text-[#2E2622] truncate">
+                          {typeof item?.name === 'string' ? item.name : 'Hardware'}
+                        </p>
                         <p className="text-[10px] text-[#7A6B5D] font-mono">
-                          {item?.code ? `${item.code} • ` : ''}₹{item?.basePrice || 0}
+                          {typeof item?.code === 'string' || typeof item?.code === 'number' ? `${item.code} • ` : ''}₹{Number(item?.basePrice) || 0}
                         </p>
                       </div>
                       <ChevronRight className="w-3.5 h-3.5 text-[#7A726A]" />
@@ -440,9 +446,15 @@ export const Header = () => {
                     <div className="p-4 bg-[#F0EDE8] rounded-[2px] border border-[#DDD8CF] flex items-center justify-between">
                       <div>
                         <p className="text-xs font-medium text-[#2E2622]">
-                          {user?.fullName || user?.name}
+                          {typeof user?.fullName === 'string'
+                            ? user.fullName
+                            : typeof user?.name === 'string'
+                              ? user.name
+                              : 'Account'}
                         </p>
-                        <p className="text-[10px] text-[#7A726A] font-mono mt-0.5">{user?.email}</p>
+                        <p className="text-[10px] text-[#7A726A] font-mono mt-0.5">
+                          {typeof user?.email === 'string' ? user.email : ''}
+                        </p>
                       </div>
                       {user?.role === 'ADMIN' ? (
                         <span className="text-[9px] uppercase tracking-wider font-semibold px-2 py-0.5 bg-[#FAF8F4] border border-[#DDD8CF] rounded-[2px] text-[#2E2622]">
@@ -594,10 +606,12 @@ export const Header = () => {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-[#2E2622] truncate">{item?.name}</p>
+                      <p className="text-xs font-medium text-[#2E2622] truncate">
+                        {typeof item?.name === 'string' ? item.name : 'Hardware'}
+                      </p>
                       <p className="text-[11px] text-[#7A6B5D]">
-                        {item?.code ? `${item.code} • ` : ''}
-                        {item?.finish ? `${item.finish} • ` : ''}₹{item?.basePrice || 0}
+                        {typeof item?.code === 'string' || typeof item?.code === 'number' ? `${item.code} • ` : ''}
+                        {typeof item?.finish === 'string' ? `${item.finish} • ` : ''}₹{Number(item?.basePrice) || 0}
                       </p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-[#7A726A]" />

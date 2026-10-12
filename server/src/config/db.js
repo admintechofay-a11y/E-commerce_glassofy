@@ -21,9 +21,7 @@ const connectDB = async () => {
     return conn;
   } catch (error) {
     console.error(`[Database Error] Connection failed: ${error.message}`);
-    if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
-      process.exit(1);
-    }
+    // Do not terminate process to ensure serverless health endpoints and fallbacks stay operational
     throw error;
   }
 };
