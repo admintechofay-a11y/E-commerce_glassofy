@@ -141,15 +141,18 @@ const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 app.use(async (req, res, next) => {
   if (mongoose.connection.readyState !== 1 && NODE_ENV !== 'test') {
+    let timer = null;
     try {
       await Promise.race([
         connectDB(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Database connection timed out after 4000ms')), 4000)
-        ),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Database connection timed out after 4000ms')), 4000);
+        }),
       ]);
     } catch (err) {
       console.warn('[Serverless DB] Auto-connect error:', err.message);
+    } finally {
+      if (timer) clearTimeout(timer);
     }
   }
   next();
