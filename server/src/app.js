@@ -28,6 +28,23 @@ app.set('trust proxy', true);
 // Disable x-powered-by natively to prevent serverless function header manipulation errors
 app.disable('x-powered-by');
 
+// Fast Diagnostic Ping Endpoint (served before any middleware)
+app.get(['/api/ping', '/ping'], (req, res) => {
+  const mongoose = require('mongoose');
+  const { MONGO_URI } = require('./config/env');
+  return res.status(200).json({
+    status: 'ok',
+    message: 'Glassofy Express backend is responding.',
+    timestamp: new Date().toISOString(),
+    env: {
+      NODE_ENV,
+      isVercel: Boolean(process.env.VERCEL),
+      mongoConfigured: Boolean(MONGO_URI),
+      dbReadyState: mongoose.connection.readyState,
+    },
+  });
+});
+
 // 1. Security HTTP Headers with Content Security Policy (CSP)
 app.use(
   helmet({
@@ -112,23 +129,6 @@ app.use((req, res, next) => {
     return next();
   }
   return mongoSanitize()(req, res, next);
-});
-
-// 5.1 Fast Diagnostic Ping Endpoint (no database required)
-app.get(['/api/ping', '/ping'], (req, res) => {
-  const mongoose = require('mongoose');
-  const { MONGO_URI } = require('./config/env');
-  return res.status(200).json({
-    status: 'ok',
-    message: 'Glassofy Express backend is responding.',
-    timestamp: new Date().toISOString(),
-    env: {
-      NODE_ENV,
-      isVercel: Boolean(process.env.VERCEL),
-      mongoHost: (MONGO_URI || '').split('@')[1]?.split('?')[0] || 'localhost',
-      dbReadyState: mongoose.connection.readyState,
-    },
-  });
 });
 
 // 6. Global API Rate Limiter
