@@ -1,18 +1,15 @@
-const app = require('./src/app');
-const { PORT, NODE_ENV } = require('./src/config/env');
-const connectDB = require('./src/config/db');
+let app;
 
-// Safeguard against unhandled errors terminating process on serverless
-process.on('uncaughtException', (err) => {
-  console.error('[Process Uncaught Exception]:', err.message);
-});
-process.on('unhandledRejection', (reason) => {
-  console.error('[Process Unhandled Rejection]:', reason);
-});
+try {
+  app = require('./bundle.js');
+} catch (bundleErr) {
+  console.warn('[Server Boot Bundle Fallback]:', bundleErr.message);
+  app = require('./src/app');
+}
 
-// Start HTTP listener only when run directly in development or standalone server
+// Start HTTP listener only when run directly as a script
 if (require.main === module) {
-  connectDB().catch((err) => console.warn('[DB Boot Warning]', err.message));
+  const { PORT, NODE_ENV } = require('./src/config/env');
   const port = process.env.PORT || PORT || 5000;
   app.listen(port, () => {
     console.log(`[Glassofy Server] Express running on port ${port} (${NODE_ENV})`);

@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "build": "node -e \"console.log('Server pre-bundled')\"",
+    "bundle": "esbuild src/app.js --bundle --platform=node --target=node18 --outfile=bundle.js",
     "dev": "nodemon src/server.js",
     "seed": "node src/scripts/seed.js",
     "seed:admin": "node src/scripts/seedAdmin.js",
