@@ -29,8 +29,12 @@ const WHATSAPP_UPLOAD_DIR = path.join(__dirname, '../../public/images/whatsapp')
 const PUBLIC_IMAGES_DIR = path.join(__dirname, '../../public/images');
 
 // Ensure directory exists
-if (!fs.existsSync(WHATSAPP_UPLOAD_DIR)) {
-  fs.mkdirSync(WHATSAPP_UPLOAD_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(WHATSAPP_UPLOAD_DIR)) {
+    fs.mkdirSync(WHATSAPP_UPLOAD_DIR, { recursive: true });
+  }
+} catch (dirErr) {
+  console.warn('[WhatsAppService] Media directory initialization skipped on serverless:', dirErr.message);
 }
 
 /**

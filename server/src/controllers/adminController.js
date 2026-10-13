@@ -16,9 +16,15 @@ const { logAudit } = require('../utils/auditLogger');
 const { getPricingSettings } = require('../services/settingsService');
 const { invalidateCatalogCache } = require('../middleware/cache');
 
+let uploadsDirAvailable = false;
 const UPLOADS_DIR = path.join(__dirname, '../../public/images/uploads');
-if (!fs.existsSync(UPLOADS_DIR)) {
-  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+  }
+  uploadsDirAvailable = true;
+} catch (dirErr) {
+  console.warn('[AdminController] Upload directory initialization skipped on serverless:', dirErr.message);
 }
 
 const ALLOWED_IMAGE_TYPES = {
@@ -59,6 +65,11 @@ const uploadAdminImage = async (req, res) => {
   }
 
   const filename = `upload_${crypto.randomBytes(12).toString('hex')}_${Date.now()}.${ext}`;
+  try {
+    if (!fs.existsSync(UPLOADS_DIR)) {
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    }
+  } catch (_) {}
   const filePath = path.join(UPLOADS_DIR, filename);
   fs.writeFileSync(filePath, buffer);
 
