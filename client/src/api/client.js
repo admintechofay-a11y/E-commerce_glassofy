@@ -57,22 +57,43 @@ api.interceptors.response.use(
       }
     }
 
-    // 3. Normalized error formatting: ensure human-readable message, never raw stack traces
+    // 3. Normalized error formatting: ensure human-readable string message, never raw objects or stack traces
     const resData = error.response?.data;
+    let safeMessage = '';
+
+    if (typeof resData === 'string') {
+      safeMessage = resData;
+    } else if (typeof resData?.message === 'string') {
+      safeMessage = resData.message;
+    } else if (typeof resData?.error === 'string') {
+      safeMessage = resData.error;
+    } else if (typeof resData?.message?.message === 'string') {
+      safeMessage = resData.message.message;
+    } else if (typeof resData?.error?.message === 'string') {
+      safeMessage = resData.error.message;
+    } else if (Array.isArray(resData?.errors) && resData.errors.length > 0) {
+      const first = resData.errors[0];
+      safeMessage = typeof first === 'string' ? first : first?.message || 'Validation failed';
+    }
+
+    if (!safeMessage) {
+      const status = error.response?.status;
+      if (status === 400) safeMessage = 'Invalid request. Please check the details entered.';
+      else if (status === 401) safeMessage = 'Invalid email or password.';
+      else if (status === 403) safeMessage = 'You do not have permission to perform this action.';
+      else if (status === 404) safeMessage = 'The requested resource was not found.';
+      else if (status === 409) safeMessage = 'An account with this email address already exists.';
+      else if (status === 422) safeMessage = 'Please verify the submitted details and try again.';
+      else if (status === 429) safeMessage = 'Too many attempts. Please try again shortly.';
+      else if (status >= 500) safeMessage = 'Our server encountered an internal error. Please try again shortly.';
+      else safeMessage = 'An unexpected error occurred. Please try again.';
+    }
+
     const formattedError = {
       status: error.response?.status,
       success: false,
-      message:
-        resData?.message ||
-        resData?.error ||
-        (error.response?.status === 403
-          ? 'You do not have permission to perform this action.'
-          : error.response?.status === 404
-            ? 'The requested resource was not found.'
-            : error.response?.status === 500
-              ? 'Our server encountered an internal error. Please try again shortly.'
-              : 'An unexpected error occurred. Please try again.'),
-      errors: resData?.errors || null,
+      message: String(safeMessage),
+      errors: Array.isArray(resData?.errors) ? resData.errors : null,
     };
 
     return Promise.reject(formattedError);

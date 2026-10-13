@@ -10,6 +10,18 @@ export const ToastProvider = ({ children }) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
+  const safeString = (val) => {
+    if (!val) return '';
+    if (typeof val === 'string') return val;
+    if (typeof val.message === 'string') return val.message;
+    if (typeof val.error === 'string') return val.error;
+    try {
+      return JSON.stringify(val);
+    } catch {
+      return String(val);
+    }
+  };
+
   const addToast = useCallback(
     (payload, maybeType = 'info', duration = 4000) => {
       let title = '';
@@ -21,14 +33,17 @@ export const ToastProvider = ({ children }) => {
         message = payload;
         type = maybeType || 'info';
       } else if (payload && typeof payload === 'object') {
-        title = payload.title || '';
-        message = payload.message || '';
+        title = safeString(payload.title);
+        message = safeString(payload.message || payload.error || (payload instanceof Error ? payload.message : ''));
+        if (!message && !title) {
+          message = safeString(payload);
+        }
         type = payload.type || maybeType || 'info';
         toastDuration = payload.duration || duration;
       }
 
       const id = Math.random().toString(36).substring(7);
-      setToasts((prev) => [...prev, { id, title, message, type }]);
+      setToasts((prev) => [...prev, { id, title: safeString(title), message: safeString(message), type }]);
 
       if (toastDuration > 0) {
         setTimeout(() => {
@@ -58,6 +73,9 @@ export const ToastProvider = ({ children }) => {
             info: 'border-l-4 border-l-[#2E2622]',
           };
 
+          const displayTitle = safeString(toast.title);
+          const displayMessage = safeString(toast.message);
+
           return (
             <div
               key={toast.id}
@@ -65,9 +83,9 @@ export const ToastProvider = ({ children }) => {
             >
               {icons[toast.type] || icons.info}
               <div className="flex-1 min-w-0">
-                {toast.title && <h5 className="text-xs font-semibold uppercase tracking-wider">{toast.title}</h5>}
-                {toast.message && (
-                  <p className="text-xs text-[#7A726A] mt-0.5 leading-relaxed">{toast.message}</p>
+                {displayTitle && <h5 className="text-xs font-semibold uppercase tracking-wider">{displayTitle}</h5>}
+                {displayMessage && (
+                  <p className="text-xs text-[#7A726A] mt-0.5 leading-relaxed">{displayMessage}</p>
                 )}
               </div>
               <button

@@ -1,52 +1,20 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "cleanUrls": true,
-  "services": {
-    "client": {
-      "root": "client",
-      "framework": "vite"
-    },
-    "server": {
-      "root": "server",
-      "framework": "express"
-    }
-  },
+  "buildCommand": "npm run build:client",
+  "outputDirectory": "client/dist",
   "rewrites": [
     {
-      "source": "/api",
-      "destination": {
-        "service": "server"
-      }
-    },
-    {
       "source": "/api/(.*)",
-      "destination": {
-        "service": "server"
-      }
+      "destination": "/api"
     },
     {
-      "source": "/assets/(.*)",
-      "destination": {
-        "service": "client"
-      }
+      "source": "/api",
+      "destination": "/api"
     },
     {
-      "source": "/data/(.*)",
-      "destination": {
-        "service": "client"
-      }
-    },
-    {
-      "source": "/images/(.*)",
-      "destination": {
-        "service": "client"
-      }
-    },
-    {
-      "source": "/(.*)",
-      "destination": {
-        "service": "client"
-      }
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ]
 }

@@ -58,13 +58,28 @@ export const LoginPage = () => {
       });
       navigate(from, { replace: true });
     } else {
+      const errorMsg =
+        typeof res.error === 'string'
+          ? res.error
+          : typeof res.error?.message === 'string'
+            ? res.error.message
+            : 'Invalid email or password';
       addToast({
         type: 'error',
         title: 'Authentication Failed',
-        message: res.error || 'Invalid email or password',
+        message: errorMsg,
       });
     }
   };
+
+  const displayError =
+    typeof authError === 'string'
+      ? authError
+      : typeof authError?.message === 'string'
+        ? authError.message
+        : authError
+          ? String(authError)
+          : null;
 
   return (
     <div className="min-h-[75vh] flex items-center justify-center px-4 py-16 sm:px-6 bg-[#FAF8F4] text-[#2E2622]">
@@ -83,9 +98,9 @@ export const LoginPage = () => {
           </p>
         </div>
 
-        {authError && (
+        {displayError && (
           <div className="mb-6 p-4 rounded-[2px] bg-[#FAF0EE] border border-[#E8C2BC] text-[#A4493D] text-xs">
-            {authError}
+            {displayError}
           </div>
         )}
 

@@ -25,9 +25,13 @@ const app = express();
 // Trust all proxies for rate limiters behind Docker/Nginx/Vercel
 app.set('trust proxy', true);
 
+// Disable x-powered-by natively to prevent serverless function header manipulation errors
+app.disable('x-powered-by');
+
 // 1. Security HTTP Headers with Content Security Policy (CSP)
 app.use(
   helmet({
+    hidePoweredBy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' },
     contentSecurityPolicy: {
       directives: {

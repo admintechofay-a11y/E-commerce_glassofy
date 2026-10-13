@@ -124,13 +124,28 @@ export const RegisterPage = () => {
       });
       navigate('/profile');
     } else {
+      const errorMsg =
+        typeof res.error === 'string'
+          ? res.error
+          : typeof res.error?.message === 'string'
+            ? res.error.message
+            : 'Failed to register account';
       addToast({
         type: 'error',
         title: 'Registration Error',
-        message: res.error || 'Failed to register account',
+        message: errorMsg,
       });
     }
   };
+
+  const displayError =
+    typeof authError === 'string'
+      ? authError
+      : typeof authError?.message === 'string'
+        ? authError.message
+        : authError
+          ? String(authError)
+          : null;
 
   return (
     <div className="min-h-screen bg-[#FAF8F4] py-12 px-4 sm:px-6 text-[#2E2622]">
@@ -151,9 +166,9 @@ export const RegisterPage = () => {
           </p>
         </div>
 
-        {authError && (
+        {displayError && (
           <div className="mb-6 p-4 rounded-[2px] bg-[#FAF0EE] border border-[#E8C2BC] text-[#A4493D] text-xs">
-            {authError}
+            {displayError}
           </div>
         )}
 

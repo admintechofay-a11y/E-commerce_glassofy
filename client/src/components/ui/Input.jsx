@@ -53,7 +53,15 @@ export const Input = React.forwardRef(
             </div>
           )}
         </div>
-        {error && <p className="text-xs text-[#A4493D] mt-1">{error}</p>}
+        {error && (
+          <p className="text-xs text-[#A4493D] mt-1">
+            {typeof error === 'string'
+              ? error
+              : typeof error?.message === 'string'
+                ? error.message
+                : String(error)}
+          </p>
+        )}
         {helperText && !error && <p className="text-xs text-[#7A726A] mt-1">{helperText}</p>}
       </div>
     );

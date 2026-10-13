@@ -40,9 +40,14 @@ export const useAuthStore = create((set) => ({
         });
         return { success: true };
       }
-      throw new Error(res.message || 'Login failed');
+      throw new Error(typeof res.message === 'string' ? res.message : 'Login failed');
     } catch (err) {
-      const message = err.message || err.error || 'Invalid credentials';
+      const message =
+        typeof err.message === 'string'
+          ? err.message
+          : typeof err.error === 'string'
+            ? err.error
+            : 'Invalid email or password';
       set({ error: message, isLoading: false });
       return { success: false, error: message };
     }
@@ -61,9 +66,17 @@ export const useAuthStore = create((set) => ({
         });
         return { success: true };
       }
-      throw new Error(res.message || 'Registration failed');
+      throw new Error(typeof res.message === 'string' ? res.message : 'Registration failed');
     } catch (err) {
-      const message = err.message || err.errors?.[0]?.message || 'Registration failed';
+      let message = 'Registration failed. Please check your details.';
+      if (Array.isArray(err.errors) && err.errors.length > 0) {
+        const first = err.errors[0];
+        message = typeof first === 'string' ? first : first?.message || message;
+      } else if (typeof err.message === 'string') {
+        message = err.message;
+      } else if (typeof err.error === 'string') {
+        message = err.error;
+      }
       set({ error: message, isLoading: false });
       return { success: false, error: message, errors: err.errors };
     }
