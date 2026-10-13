@@ -8,21 +8,22 @@
     },
     "server": {
       "root": "server",
-      "framework": "express",
-      "entrypoint": "index.js"
+      "framework": "express"
     }
   },
   "rewrites": [
     {
       "source": "/api",
       "destination": {
-        "service": "server"
+        "service": "server",
+        "path": "/"
       }
     },
     {
       "source": "/api/(.*)",
       "destination": {
-        "service": "server"
+        "service": "server",
+        "path": "/$1"
       }
     },
     {
