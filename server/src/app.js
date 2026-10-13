@@ -114,6 +114,23 @@ app.use((req, res, next) => {
   return mongoSanitize()(req, res, next);
 });
 
+// 5.1 Fast Diagnostic Ping Endpoint (no database required)
+app.get(['/api/ping', '/ping'], (req, res) => {
+  const mongoose = require('mongoose');
+  const { MONGO_URI } = require('./config/env');
+  return res.status(200).json({
+    status: 'ok',
+    message: 'Glassofy Express backend is responding.',
+    timestamp: new Date().toISOString(),
+    env: {
+      NODE_ENV,
+      isVercel: Boolean(process.env.VERCEL),
+      mongoHost: (MONGO_URI || '').split('@')[1]?.split('?')[0] || 'localhost',
+      dbReadyState: mongoose.connection.readyState,
+    },
+  });
+});
+
 // 6. Global API Rate Limiter
 if (NODE_ENV !== 'test') {
   app.use('/api', apiLimiter);
@@ -125,7 +142,12 @@ const connectDB = require('./config/db');
 app.use(async (req, res, next) => {
   if (mongoose.connection.readyState !== 1 && NODE_ENV !== 'test') {
     try {
-      await connectDB();
+      await Promise.race([
+        connectDB(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Database connection timed out after 4000ms')), 4000)
+        ),
+      ]);
     } catch (err) {
       console.warn('[Serverless DB] Auto-connect error:', err.message);
     }

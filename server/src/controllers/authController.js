@@ -9,6 +9,16 @@ const { sendSuccess, sendError } = require('../utils/response');
  * @access  Public
  */
 const register = async (req, res) => {
+  const mongoose = require('mongoose');
+  if (mongoose.connection.readyState !== 1) {
+    return sendError(
+      res,
+      'Database service is currently connecting or unavailable. Please try again in a moment.',
+      null,
+      503
+    );
+  }
+
   const { fullName, email, mobile, password, businessName, gstNumber, address } = req.body;
 
   // Check if email already registered
@@ -53,6 +63,16 @@ const register = async (req, res) => {
  * @access  Public
  */
 const login = async (req, res) => {
+  const mongoose = require('mongoose');
+  if (mongoose.connection.readyState !== 1) {
+    return sendError(
+      res,
+      'Database service is currently connecting or unavailable. Please try again in a moment.',
+      null,
+      503
+    );
+  }
+
   const { email, password } = req.body;
 
   // Find user and include password for comparison
