@@ -64,15 +64,40 @@ export const CheckoutPage = () => {
     setIsSubmitting(true);
 
     try {
+      // Auto-clean phone (strip country code +91, leading 0, spaces, dashes)
+      let cleanedPhone = (formData.phone || '').trim().replace(/[\s+-]/g, '');
+      if (cleanedPhone.startsWith('91') && cleanedPhone.length === 12) {
+        cleanedPhone = cleanedPhone.slice(2);
+      } else if (cleanedPhone.startsWith('0') && cleanedPhone.length === 11) {
+        cleanedPhone = cleanedPhone.slice(1);
+      }
+
+      // Auto-extract pincode if empty from line1 or line2
+      let cleanedPincode = (formData.pincode || '').trim().replace(/\s+/g, '');
+      if (!cleanedPincode) {
+        const pinMatch = `${formData.line1} ${formData.line2}`.match(/\b([1-9][0-9]{5})\b/);
+        if (pinMatch) {
+          cleanedPincode = pinMatch[1];
+          setFormData((prev) => ({ ...prev, pincode: pinMatch[1] }));
+        }
+      }
+
+      if (!cleanedPhone || !/^[6-9]\d{9}$/.test(cleanedPhone)) {
+        throw new Error('Please enter a valid 10-digit mobile number (e.g. 9898471014)');
+      }
+      if (!cleanedPincode || !/^[1-9][0-9]{5}$/.test(cleanedPincode)) {
+        throw new Error('Please enter a valid 6-digit Indian PIN code (e.g. 362266)');
+      }
+
       const payload = {
         shippingAddress: {
           fullName: formData.fullName.trim(),
-          phone: formData.phone.trim(),
+          phone: cleanedPhone,
           line1: formData.line1.trim(),
           line2: formData.line2.trim(),
           city: formData.city.trim(),
           state: formData.state.trim(),
-          pincode: formData.pincode.trim(),
+          pincode: cleanedPincode,
         },
         businessName: formData.businessName.trim(),
         gstNumber: formData.gstNumber.trim().toUpperCase(),
@@ -274,9 +299,10 @@ export const CheckoutPage = () => {
                     type="tel"
                     name="phone"
                     required
-                    maxLength={10}
+                    maxLength={15}
                     value={formData.phone}
                     onChange={handleChange}
+                    placeholder="9898471014"
                     className="w-full px-3.5 py-2.5 bg-[#FAF8F4] border border-[#DDD8CF] rounded-[2px] text-base sm:text-sm text-[#2E2622] focus:outline-none focus:border-[#3A2F2B] min-h-[44px]"
                   />
                 </div>

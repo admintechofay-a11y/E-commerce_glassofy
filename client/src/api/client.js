@@ -61,7 +61,20 @@ api.interceptors.response.use(
     const resData = error.response?.data;
     let safeMessage = '';
 
-    if (typeof resData === 'string') {
+    if (Array.isArray(resData?.errors) && resData.errors.length > 0) {
+      safeMessage = resData.errors
+        .map((e) => {
+          if (typeof e === 'string') return e;
+          if (e?.message) {
+            const rawField = e.field ? String(e.field).split('.').pop() : '';
+            const fieldLabel = rawField ? `${rawField.charAt(0).toUpperCase() + rawField.slice(1)}: ` : '';
+            return `${fieldLabel}${e.message}`;
+          }
+          return null;
+        })
+        .filter(Boolean)
+        .join(' | ') || (typeof resData?.message === 'string' ? resData.message : 'Validation failed');
+    } else if (typeof resData === 'string') {
       safeMessage = resData;
     } else if (typeof resData?.message === 'string') {
       safeMessage = resData.message;
@@ -71,9 +84,6 @@ api.interceptors.response.use(
       safeMessage = resData.message.message;
     } else if (typeof resData?.error?.message === 'string') {
       safeMessage = resData.error.message;
-    } else if (Array.isArray(resData?.errors) && resData.errors.length > 0) {
-      const first = resData.errors[0];
-      safeMessage = typeof first === 'string' ? first : first?.message || 'Validation failed';
     }
 
     if (!safeMessage) {

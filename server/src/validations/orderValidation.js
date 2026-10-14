@@ -4,17 +4,37 @@ const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 const pincodeRegex = /^[1-9][0-9]{5}$/;
 const gstinRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
 
+const normalizeIndianPhone = (val) => {
+  if (typeof val !== 'string') return '';
+  let cleaned = val.replace(/[\s+-]/g, '');
+  if (cleaned.startsWith('91') && cleaned.length === 12) {
+    cleaned = cleaned.slice(2);
+  } else if (cleaned.startsWith('0') && cleaned.length === 11) {
+    cleaned = cleaned.slice(1);
+  }
+  return cleaned;
+};
+
 const addressSchema = z.object({
   fullName: z.string().trim().min(2, 'Full name must be at least 2 characters'),
   phone: z
     .string()
     .trim()
-    .regex(/^[6-9]\d{9}$/, 'Must be a valid 10-digit Indian phone number'),
+    .transform(normalizeIndianPhone)
+    .refine((val) => /^[6-9]\d{9}$/.test(val), {
+      message: 'Must be a valid 10-digit Indian phone number',
+    }),
   line1: z.string().trim().min(3, 'Address line 1 must be at least 3 characters'),
   line2: z.string().trim().optional().default(''),
   city: z.string().trim().min(2, 'City is required'),
   state: z.string().trim().min(2, 'State is required'),
-  pincode: z.string().trim().regex(pincodeRegex, 'Valid 6-digit Indian PIN code required'),
+  pincode: z
+    .string()
+    .trim()
+    .transform((val) => (val || '').replace(/\s+/g, ''))
+    .refine((val) => /^[1-9][0-9]{5}$/.test(val), {
+      message: 'Valid 6-digit Indian PIN code required',
+    }),
 });
 
 const checkoutSchema = z.object({
