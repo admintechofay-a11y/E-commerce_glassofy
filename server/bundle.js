@@ -98866,6 +98866,44 @@ var require_jwt = __commonJS({
   }
 });
 
+// src/config/db.js
+var require_db3 = __commonJS({
+  "src/config/db.js"(exports2, module2) {
+    var mongoose2 = require_mongoose2();
+    var { MONGO_URI } = require_env();
+    var cached = global.mongoose;
+    if (!cached) {
+      cached = global.mongoose = { conn: null, promise: null };
+    }
+    var connectDB2 = async () => {
+      if (cached.conn && mongoose2.connection.readyState === 1) {
+        return cached.conn;
+      }
+      if (!cached.promise) {
+        const opts = {
+          serverSelectionTimeoutMS: 5e3,
+          connectTimeoutMS: 5e3,
+          maxPoolSize: 10
+        };
+        cached.promise = mongoose2.connect(MONGO_URI, opts).then((mongooseInstance) => {
+          console.log(`[Database] MongoDB Connected: ${mongooseInstance.connection.host}/${mongooseInstance.connection.name}`);
+          return mongooseInstance;
+        });
+      }
+      try {
+        cached.conn = await cached.promise;
+      } catch (error) {
+        cached.promise = null;
+        cached.conn = null;
+        console.error(`[Database Error] Connection failed: ${error.message}`);
+        throw error;
+      }
+      return cached.conn;
+    };
+    module2.exports = connectDB2;
+  }
+});
+
 // src/controllers/authController.js
 var require_authController = __commonJS({
   "src/controllers/authController.js"(exports2, module2) {
@@ -98873,15 +98911,21 @@ var require_authController = __commonJS({
     var { User, AuditLog } = require_models();
     var { sendTokenResponse, clearTokenCookies, verifyRefreshToken } = require_jwt();
     var { sendSuccess: sendSuccess2, sendError: sendError2 } = require_response2();
+    var connectDB2 = require_db3();
     var register = async (req, res) => {
       const mongoose2 = require_mongoose2();
       if (mongoose2.connection.readyState !== 1) {
-        return sendError2(
-          res,
-          "Database service is currently connecting or unavailable. Please try again in a moment.",
-          null,
-          503
-        );
+        try {
+          await connectDB2();
+        } catch (dbErr) {
+          console.warn("[Register DB Connect Retry]:", dbErr.message);
+          return sendError2(
+            res,
+            "Database service is currently connecting. Please try again in a moment.",
+            null,
+            503
+          );
+        }
       }
       const { fullName, email, mobile, password, businessName, gstNumber, address } = req.body;
       const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -98915,12 +98959,17 @@ var require_authController = __commonJS({
     var login = async (req, res) => {
       const mongoose2 = require_mongoose2();
       if (mongoose2.connection.readyState !== 1) {
-        return sendError2(
-          res,
-          "Database service is currently connecting or unavailable. Please try again in a moment.",
-          null,
-          503
-        );
+        try {
+          await connectDB2();
+        } catch (dbErr) {
+          console.warn("[Login DB Connect Retry]:", dbErr.message);
+          return sendError2(
+            res,
+            "Database service is currently connecting. Please try again in a moment.",
+            null,
+            503
+          );
+        }
       }
       const { email, password } = req.body;
       const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
@@ -282084,44 +282133,6 @@ var require_seoRoutes = __commonJS({
   }
 });
 
-// src/config/db.js
-var require_db3 = __commonJS({
-  "src/config/db.js"(exports2, module2) {
-    var mongoose2 = require_mongoose2();
-    var { MONGO_URI } = require_env();
-    var cached = global.mongoose;
-    if (!cached) {
-      cached = global.mongoose = { conn: null, promise: null };
-    }
-    var connectDB2 = async () => {
-      if (cached.conn && mongoose2.connection.readyState === 1) {
-        return cached.conn;
-      }
-      if (!cached.promise) {
-        const opts = {
-          serverSelectionTimeoutMS: 5e3,
-          connectTimeoutMS: 5e3,
-          maxPoolSize: 10
-        };
-        cached.promise = mongoose2.connect(MONGO_URI, opts).then((mongooseInstance) => {
-          console.log(`[Database] MongoDB Connected: ${mongooseInstance.connection.host}/${mongooseInstance.connection.name}`);
-          return mongooseInstance;
-        });
-      }
-      try {
-        cached.conn = await cached.promise;
-      } catch (error) {
-        cached.promise = null;
-        cached.conn = null;
-        console.error(`[Database Error] Connection failed: ${error.message}`);
-        throw error;
-      }
-      return cached.conn;
-    };
-    module2.exports = connectDB2;
-  }
-});
-
 // src/app.js
 var express = require_express2();
 var cors = require_lib3();
@@ -282243,7 +282254,7 @@ app.use(async (req, res, next) => {
       await Promise.race([
         connectDB(),
         new Promise((_, reject) => {
-          timer = setTimeout(() => reject(new Error("Database connection timed out after 4000ms")), 4e3);
+          timer = setTimeout(() => reject(new Error("Database connection timed out after 8000ms")), 8e3);
         })
       ]);
     } catch (err) {

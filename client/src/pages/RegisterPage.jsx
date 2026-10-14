@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Button, Input, useToast } from '../components/ui';
 import { User, Mail, Phone, Lock, Building, FileText, MapPin, Eye, EyeOff } from 'lucide-react';
@@ -9,6 +9,9 @@ export const RegisterPage = () => {
   const { register, isLoading, error: authError, clearError } = useAuthStore();
   const { addToast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const redirectQuery = searchParams.get('redirect');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -122,7 +125,7 @@ export const RegisterPage = () => {
         title: 'Account Created',
         message: 'Welcome to Glassofy! Your account has been registered successfully.',
       });
-      navigate('/profile');
+      navigate(redirectQuery || '/profile');
     } else {
       const errorMsg =
         typeof res.error === 'string'
@@ -167,8 +170,16 @@ export const RegisterPage = () => {
         </div>
 
         {displayError && (
-          <div className="mb-6 p-4 rounded-[2px] bg-[#FAF0EE] border border-[#E8C2BC] text-[#A4493D] text-xs">
-            {displayError}
+          <div className="mb-6 p-4 rounded-[2px] bg-[#FAF0EE] border border-[#E8C2BC] text-[#A4493D] text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <span>{displayError}</span>
+            {displayError.toLowerCase().includes('already exists') && (
+              <Link
+                to={redirectQuery ? `/login?redirect=${encodeURIComponent(redirectQuery)}` : '/login'}
+                className="underline font-semibold hover:text-[#7A726A] shrink-0"
+              >
+                Sign In &rarr;
+              </Link>
+            )}
           </div>
         )}
 
@@ -362,7 +373,10 @@ export const RegisterPage = () => {
 
         <div className="mt-8 text-center text-xs text-[#7A726A] border-t border-[#DDD8CF] pt-6">
           Already registered with Glassofy?{' '}
-          <Link to="/login" className="text-[#2E2622] underline underline-offset-2 hover:text-[#7A726A] font-medium">
+          <Link
+            to={redirectQuery ? `/login?redirect=${encodeURIComponent(redirectQuery)}` : '/login'}
+            className="text-[#2E2622] underline underline-offset-2 hover:text-[#7A726A] font-medium"
+          >
             Sign In here
           </Link>
         </div>

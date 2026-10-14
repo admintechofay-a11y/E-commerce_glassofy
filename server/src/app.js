@@ -146,7 +146,7 @@ app.use(async (req, res, next) => {
       await Promise.race([
         connectDB(),
         new Promise((_, reject) => {
-          timer = setTimeout(() => reject(new Error('Database connection timed out after 4000ms')), 4000);
+          timer = setTimeout(() => reject(new Error('Database connection timed out after 8000ms')), 8000);
         }),
       ]);
     } catch (err) {

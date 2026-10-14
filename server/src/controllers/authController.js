@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { User, AuditLog } = require('../models');
 const { sendTokenResponse, clearTokenCookies, verifyRefreshToken } = require('../utils/jwt');
 const { sendSuccess, sendError } = require('../utils/response');
+const connectDB = require('../config/db');
 
 /**
  * @desc    Register new user
@@ -11,12 +12,17 @@ const { sendSuccess, sendError } = require('../utils/response');
 const register = async (req, res) => {
   const mongoose = require('mongoose');
   if (mongoose.connection.readyState !== 1) {
-    return sendError(
-      res,
-      'Database service is currently connecting or unavailable. Please try again in a moment.',
-      null,
-      503
-    );
+    try {
+      await connectDB();
+    } catch (dbErr) {
+      console.warn('[Register DB Connect Retry]:', dbErr.message);
+      return sendError(
+        res,
+        'Database service is currently connecting. Please try again in a moment.',
+        null,
+        503
+      );
+    }
   }
 
   const { fullName, email, mobile, password, businessName, gstNumber, address } = req.body;
@@ -65,12 +71,17 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   const mongoose = require('mongoose');
   if (mongoose.connection.readyState !== 1) {
-    return sendError(
-      res,
-      'Database service is currently connecting or unavailable. Please try again in a moment.',
-      null,
-      503
-    );
+    try {
+      await connectDB();
+    } catch (dbErr) {
+      console.warn('[Login DB Connect Retry]:', dbErr.message);
+      return sendError(
+        res,
+        'Database service is currently connecting. Please try again in a moment.',
+        null,
+        503
+      );
+    }
   }
 
   const { email, password } = req.body;

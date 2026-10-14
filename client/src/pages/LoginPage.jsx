@@ -18,7 +18,9 @@ export const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const from = location.state?.from?.pathname || '/profile';
+  const searchParams = new URLSearchParams(location.search);
+  const redirectQuery = searchParams.get('redirect');
+  const from = redirectQuery || location.state?.from?.pathname || '/profile';
 
   const validateForm = () => {
     const newErrors = {};
@@ -165,7 +167,10 @@ export const LoginPage = () => {
 
         <div className="mt-8 text-center text-xs text-[#7A726A] border-t border-[#DDD8CF] pt-6">
           Don&apos;t have an account yet?{' '}
-          <Link to="/register" className="text-[#2E2622] underline underline-offset-2 hover:text-[#7A726A] font-medium">
+          <Link
+            to={redirectQuery ? `/register?redirect=${encodeURIComponent(redirectQuery)}` : '/register'}
+            className="text-[#2E2622] underline underline-offset-2 hover:text-[#7A726A] font-medium"
+          >
             Register now
           </Link>
         </div>
